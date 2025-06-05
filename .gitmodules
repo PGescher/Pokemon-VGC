@@ -1,0 +1,3 @@
+[submodule "pokemon-vgc-engine"]
+	path = pokemon-vgc-engine
+	url = git@github.com:PGescher/pokemon-vgc-engine.git
