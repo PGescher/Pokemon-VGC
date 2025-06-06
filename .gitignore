@@ -2,3 +2,5 @@
 .idea/
 pokemon-vgc-engine/
 pokemon-vgc-engine/vgc2.egg-info/
+pokemon-vgc-engine/visual_server
+*/__pycache__/
