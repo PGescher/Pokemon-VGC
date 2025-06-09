@@ -4,9 +4,9 @@ from vgc2.agent import BattlePolicy, SelectionPolicy, TeamBuildPolicy
 #from vgc2.agent.teambuild import RandomTeamBuildPolicy
 from vgc2.competition import Competitor
 
-from .BlackSwan.battlepolicy import RandomBattlePolicy
-from .BlackSwan.selectionpolicy import RandomSelectionPolicy
-from .BlackSwan.teambuildpolicy import RandomTeamBuildPolicy
+from BlackSwan.battlepolicy import RandomBattlePolicy
+from BlackSwan.selectionpolicy import RandomSelectionPolicy
+from BlackSwan.teambuildpolicy import RandomTeamBuildPolicy
 
 class BlackSwanCompetitor(Competitor):
 
