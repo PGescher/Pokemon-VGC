@@ -6,4 +6,4 @@ pokemon-vgc-engine/visual_server
 */__pycache__/
 /TrainingRuns
 /Challenge_Competitors/OnlyTeamBuildPolicy
-run_championship_template.ipynb
+#run_championship_template.ipynb

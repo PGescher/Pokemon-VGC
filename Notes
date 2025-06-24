@@ -1,78 +1,29 @@
+Team Builder Policy:
 
-Step 1: Add Utility Functions to Evaluate Pokémon
+Architecture:
+    Encoding
+    Embedding
+    Transformer
+    Selection Heads
 
-Introduce basic stat evaluations to understand "how good" a Pokémon is.
+Learning Process:
+    Policy Gradient Reinforcement Learning
 
-def evaluate_pokemon_strength(pokemon: Pokemon) -> float:
-    # Simple strength measure: sum of stats + offensive move power
-    base_score = sum(pokemon.stats)
-    move_power = sum(m.power for m in pokemon.moves if m.power)
-    return base_score + move_power
+    Samlping of Team
 
-Step 2: Add Type Effectiveness Matrix (Optional)
+    Training Loop:
+        Hyperparameters
+        Reward Calculation
 
-Type synergy and coverage are crucial.
-
-from vgc2.battle_engine.modifiers import effectiveness
-
-def calculate_team_coverage(pokemon_team: list[PokemonSpecies]) -> dict[Type, float]:
-    type_coverage = {t: 0 for t in Type}
-    for p in pokemon_team:
-        for m in p.moves:
-            if m.type:
-                type_coverage[m.type] += 1
-    return type_coverage
-
-Step 3: Create a Heuristic-Based Team Builder
-
-Use the above helpers to create an intelligent, non-RL team builder before jumping into ML.
-
-from operator import itemgetter
-
-class HeuristicTeamBuildPolicy(TeamBuildPolicy):
-    def decision(self, roster: Roster, meta: Meta | None, max_team_size: int, max_pkm_moves: int, n_active: int) -> TeamBuildCommand:
-        scored_roster = [(i, evaluate_pokemon_strength(Pokemon(p, list(range(min(max_pkm_moves, len(p.moves))))))) for i, p in enumerate(roster)]
-        best_choices = sorted(scored_roster, key=itemgetter(1), reverse=True)[:max_team_size]
-
-        cmds = []
-        for i, _ in best_choices:
-            p = roster[i]
-            evs = tuple(multinomial(510, [1 / 6] * 6, size=1)[0])
-            nature = Nature(choice(len(Nature)))
-            move_indexes = list(range(min(max_pkm_moves, len(p.moves))))
-            cmds.append((i, evs, (31,) * 6, nature, move_indexes))
-        return cmds
-
-This policy picks the strongest Pokémon based on a scoring function (you can improve it with type synergy, status move balance, etc.).
-Step 4: Logging + Battle History for Learning Agents
-
-Modify battle loop to log outcomes, e.g., in Championship class:
-
-def _matches(self):
-    ...
-    self.meta.add_match((cm[0].team, cm[1].team), winner, (cm[0].elo, cm[1].elo))
-    self.log_match(cm, winner)
-
-def log_match(self, competitors, winner):
-    print(f"Match: {competitors[0].competitor.name} vs {competitors[1].competitor.name} => Winner: {competitors[winner].competitor.name}")
+        Validation? How do we know if we overfit?
 
 
-Step 5: Add a Training Loop (for ML)
+Possible Visualisation:
 
-In the future, when you implement an RL policy, use a loop like:
+    Learning Process - Loss, LR, Elo, Winrate, Reward?
 
-for epoch in range(n_epochs):
-    team = rl_agent.select_team(roster, meta)
-    reward = simulate_battles(team)
-    rl_agent.update(team, reward)
+       Embeddings:
+       Relationships.
+       Decision.
 
-You’d subclass TeamBuildPolicy to create RLTeamBuildPolicy.
-Summary of What to Add First
-Task	                        Purpose
-evaluate_pokemon_strength	    Enables scoring Pokémon
-HeuristicTeamBuildPolicy	    A smart team-building baseline
-Type coverage utility	        Support synergy-aware decisions
-Battle logging	                Prepare for RL or reward-based learning
-
-Optional:
-RLTeamBuildPolicy	            Long-term expansion to RL
+    RoundRobin for Validation and display performance changes?
