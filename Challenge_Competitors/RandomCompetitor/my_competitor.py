@@ -10,7 +10,7 @@ from .my_teambuildpolicy import RandomTeamBuildPolicy
 
 class MyCompetitor(Competitor):
 
-    def __init__(self, name: str = "Example"):
+    def __init__(self, name: str = "Random"):
         self.__name = name
         self.__battle_policy = RandomBattlePolicy()
         self.__selection_policy = RandomSelectionPolicy()

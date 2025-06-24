@@ -4,8 +4,10 @@ from vgc2.agent import TeamBuildPolicy, TeamBuildCommand
 from vgc2.battle_engine.modifiers import Nature
 from vgc2.meta import Meta, Roster
 
-from utils.teambuild_model import encode_roster
-from utils.teambuild_model import TeamBuilderModel
+import torch
+
+from pathlib import Path
+from .teambuild_model import TeamBuilderModel
 
 class TransformerTeamBuildPolicy(TeamBuildPolicy):
     def __init__(self):
@@ -13,6 +15,22 @@ class TransformerTeamBuildPolicy(TeamBuildPolicy):
         self.last_input = None
         self.last_output = None
         self.last_decision = None
+
+        # ToDo: Init with loaded Model
+        current_dir = Path(__file__).resolve().parent
+        #model_path = current_dir / 'teambuilder_model_0623_01.pt'
+        model_path = current_dir / 'final_teambuilder_model_epoch1000.ckpt'
+
+        self.model = TeamBuilderModel()
+        self.model.load_state_dict(torch.load(model_path))
+
+        # model = torch.load(model_path)
+        #self.model = torch.jit.load(model_path)
+        #print(f"Model loaded: {self.model}")
+
+
+        self.model.eval()
+
     """
     Encode roster into tensors:
         Types to int
@@ -59,6 +77,127 @@ class TransformerTeamBuildPolicy(TeamBuildPolicy):
     Repeat
     """
 
+    def encode_roster(self, roster):
+        """
+        roster	List[PokemonSpecies]	length = 100
+        base_stats	Tuple[int, int, int, int, int, int]	length = 6
+        types	List[Type]	length = 1 or 2
+        moves	List[Move]	length = 4
+        """
+        N = len(roster)
+        M = 4  # or just 4
+
+        # torch.zeroes is default torch.FloatTensor but i also need Long etc.
+        base_stats = torch.zeros(1, N, 6)  # 6 stats
+
+        types = torch.zeros(1, N, 2, dtype=torch.long)  # 2 possible types
+
+        # Move Attributes
+        pkm_type = torch.zeros(1, N, M, dtype=torch.long)
+        category = torch.zeros(1, N, M, dtype=torch.long)
+        base_power = torch.zeros(1, N, M)
+        accuracy = torch.zeros(1, N, M)
+        max_pp = torch.zeros(1, N, M)
+        priority = torch.zeros(1, N, M, dtype=torch.long)
+        effect_prob = torch.zeros(1, N, M)
+
+        force_switch = torch.zeros(1, N, M)
+        self_switch = torch.zeros(1, N, M)
+        ignore_evasion = torch.zeros(1, N, M)
+        protect = torch.zeros(1, N, M)
+
+        boosts = torch.zeros(1, N, M, 8)
+
+        self_boosts = torch.zeros(1, N, M)
+        heal = torch.zeros(1, N, M)
+        recoil = torch.zeros(1, N, M)
+
+        weather_start = torch.zeros(1, N, M, dtype=torch.long)
+        field_start = torch.zeros(1, N, M, dtype=torch.long)
+
+        toggle_trickroom = torch.zeros(1, N, M)
+        change_type = torch.zeros(1, N, M)
+        toggle_reflect = torch.zeros(1, N, M)
+        toggle_lightscreen = torch.zeros(1, N, M)
+        toggle_tailwind = torch.zeros(1, N, M)
+
+        hazard = torch.zeros(1, N, M, dtype=torch.long)
+        status = torch.zeros(1, N, M, dtype=torch.long)
+        disable = torch.zeros(1, N, M, dtype=torch.long)
+        disable = torch.zeros(1, N, M, dtype=torch.long)
+
+        for i, pkm in enumerate(roster):
+            base_stats[0, i] = torch.tensor(pkm.base_stats)
+
+            # fill types if only 1 type
+            types[0, 1, :len(pkm.types)] = torch.tensor([t.value for t in pkm.types])
+
+            # iterate moves of pkm
+            for j, move in enumerate(pkm.moves):
+                pkm_type[0, i, j] = move.pkm_type.value
+                category[0, i, j] = move.category.value
+                base_power[0, i, j] = float(move.base_power)
+                accuracy[0, i, j] = float(move.accuracy)
+                max_pp[0, i, j] = int(move.max_pp)
+                priority[0, i, j] = int(move.priority)
+                effect_prob[0, i, j] = float(move.effect_prob)
+
+                force_switch[0, i, j] = move.force_switch
+                self_switch[0, i, j] = move.self_switch
+                ignore_evasion[0, i, j] = move.ignore_evasion
+                protect[0, i, j] = move.protect
+
+                boosts[0, i, j] = torch.tensor(move.boosts)
+
+                self_boosts[0, i, j] = move.self_boosts
+                heal[0, i, j] = float(move.heal)
+                recoil[0, i, j] = float(move.recoil)
+
+                weather_start[0, i, j] = move.weather_start.value
+                field_start[0, i, j] = move.field_start.value
+
+                toggle_trickroom[0, i, j] = move.toggle_trickroom
+                change_type[0, i, j] = move.change_type
+                toggle_reflect[0, i, j] = move.toggle_reflect
+                toggle_lightscreen[0, i, j] = move.toggle_lightscreen
+                toggle_tailwind[0, i, j] = move.toggle_tailwind
+
+                hazard[0, i, j] = move.hazard.value
+                status[0, i, j] = move.status.value
+                disable[0, i, j] = move.disable
+
+        return {
+            'base_stats': base_stats,
+            'types': types,
+            'pkm_type': pkm_type,
+            'category': category,
+            'base_power': base_power,
+            'accuracy': accuracy,
+            'max_pp': max_pp,
+            'priority': priority,
+            'effect_prob': effect_prob,
+            'force_switch': force_switch,
+            'self_switch': self_switch,
+            'ignore_evasion': ignore_evasion,
+            'protect': protect,
+            'boosts': boosts,
+            'self_boosts': self_boosts,
+            'heal': heal,
+            'recoil': recoil,
+            'weather_start': weather_start,
+            'field_start': field_start,
+            'toggle_trickroom': toggle_trickroom,
+            'change_type': change_type,
+            'toggle_reflect': toggle_reflect,
+            'toggle_lightscreen': toggle_lightscreen,
+            'toggle_tailwind': toggle_tailwind,
+            'hazard': hazard,
+            'status': status,
+            'disable': disable
+        }
+
+
+
     def decision(self,
                  roster: Roster,
                  meta: Meta | None,
@@ -67,6 +206,9 @@ class TransformerTeamBuildPolicy(TeamBuildPolicy):
                  n_active: int) -> TeamBuildCommand:
         #print(f"Max Team Size: {max_team_size}")
         #print(f"Max Pkm Moves: {max_pkm_moves}")
+
+
+
         """
         roster (List): of all available Pokémon to choose from
         meta (Meta): Metadata about the game enviornment
@@ -79,7 +221,7 @@ class TransformerTeamBuildPolicy(TeamBuildPolicy):
         """
 
         # Convert to input tensors for model
-        inputs = encode_roster(roster)
+        inputs = self.encode_roster(roster)
 
         # Pass to model
         outputs = self.model(
